@@ -14,31 +14,45 @@ ___
 ___
 ## Установка бота
 ### Установка зависимостей для сборки Python
+```
 sudo apt update  
 sudo apt install -y build-essential libssl-dev zlib1g-dev \  
 libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev \  
 libffi-dev libbz2-dev wget
+```
 
 ### Скачиваем исходники Python 3.14.0
+```
 wget https://www.python.org/ftp/python/3.14.0/Python-3.14.0.tgz
+```
 
 ### Распаковываем архив
+```
 tar -xvf Python-3.14.0.tgz  
 cd Python-3.14.0
+```
 
 ### Сборка и установка
+```
 ./configure --enable-optimizations  
 make -j$(nproc)  
 sudo make altinstall
+```
 
 ### Установка Screen 
+```
 sudo apt install -y screen
+```
 ### Настройка бота
+```
 cd <расположение бота>  
 nano .env
+```
 
 ### Запуск бота
+```
 screen -S bot  
 python3.14 main.py
+```
 
 **Теперь бот готов к использовнию** 
