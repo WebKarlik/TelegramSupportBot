@@ -24,9 +24,20 @@ jobs:
       SUPPORT_NAME: ${{ vars.SUPPORT_NAME }}
       WEBAPP_URL: ${{ vars.WEBAPP_URL }}
     steps:
-      - name: Проверка токена
-        if: env.TGCLOUD_TOKEN == ''
-        run: echo "::notice::Секрет TGCLOUD_TOKEN не задан — деплой в Telegram Serverless пропущен."
+      - name: Проверка секретов
+        run: |
+          if [ -z "$TGCLOUD_TOKEN" ]; then
+            msg="Секрет TGCLOUD_TOKEN не найден. Добавьте его в Settings → Secrets and variables → Actions → вкладка Secrets → Repository secrets (не Variables и не Environment)."
+            # При ручном запуске это ошибка, при обычном push — просто пропуск (бот может работать на сервере).
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then echo "::error::$msg"; exit 1; fi
+            echo "::notice::$msg Деплой пропущен."
+            exit 0
+          fi
+          if [ -z "$SUPERADMIN_IDS" ]; then
+            echo "::error::Секрет SUPERADMIN_IDS не найден (ваш Telegram ID). Добавьте его там же, где TGCLOUD_TOKEN."
+            exit 1
+          fi
+          echo "Секреты на месте: TGCLOUD_TOKEN и SUPERADMIN_IDS."
       - uses: actions/checkout@v4
         if: env.TGCLOUD_TOKEN != ''
       - uses: actions/setup-node@v4
