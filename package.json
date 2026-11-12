@@ -5,11 +5,13 @@
   "type": "module",
   "description": "Бот поддержки для Telegram: версия для Telegram Serverless (папка tgcloud/). Python-версия — в папке bot/.",
   "scripts": {
+    "configure": "node scripts/configure.mjs",
     "login": "tgcloud login",
-    "deploy": "tgcloud push",
+    "deploy": "node scripts/configure.mjs && tgcloud push",
     "migrate": "tgcloud migrate",
     "status": "tgcloud status",
     "webhook": "tgcloud webhook",
+    "pretest": "node scripts/configure.mjs --allow-empty",
     "test": "node --test tests/serverless/bot.test.mjs"
   },
   "devDependencies": {

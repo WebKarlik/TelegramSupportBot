@@ -1,12 +1,16 @@
 # Автодеплой версии для Telegram Serverless (папки tgcloud/ и webapp/).
-# Работает, только если в Settings → Secrets and variables → Actions добавлен секрет
-# TGCLOUD_TOKEN (BotFather → бот → Serverless → CLI Access). Без него workflow просто пропускается.
+# Нужны секреты в Settings → Secrets and variables → Actions:
+#   TGCLOUD_TOKEN   — BotFather → бот → Serverless → CLI Access → Access token
+#   SUPERADMIN_IDS  — ваш Telegram ID (через запятую, если несколько)
+# Необязательные переменные (вкладка Variables): SUPPORT_NAME, WEBAPP_URL.
+# Личные настройки в репозиторий не попадают: они подставляются только при деплое.
+# Без TGCLOUD_TOKEN workflow просто пропускается.
 name: Telegram Serverless
 
 on:
   push:
     branches: [main]
-    paths: ["tgcloud/**", "webapp/**", "tgcloud.jsonc", "package*.json"]
+    paths: ["tgcloud/**", "webapp/**", "scripts/**", "tgcloud.jsonc", "package*.json", ".github/workflows/serverless.yml"]
   workflow_dispatch:
 
 concurrency: serverless-deploy
@@ -16,6 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN }}
+      SUPERADMIN_IDS: ${{ secrets.SUPERADMIN_IDS }}
+      SUPPORT_NAME: ${{ vars.SUPPORT_NAME }}
+      WEBAPP_URL: ${{ vars.WEBAPP_URL }}
     steps:
       - name: Проверка токена
         if: env.TGCLOUD_TOKEN == ''
@@ -33,7 +40,7 @@ jobs:
         run: npm test
       - name: Деплой кода и мини-приложения
         if: env.TGCLOUD_TOKEN != ''
-        run: npx tgcloud push
+        run: npm run deploy
       - name: Безопасные изменения схемы БД (новые таблицы/столбцы)
         if: env.TGCLOUD_TOKEN != ''
         run: npx tgcloud migrate --safe

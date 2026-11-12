@@ -427,7 +427,7 @@ async function loadAdmins() {
     view.append(list);
     view.append(h('div', { class: 'card' }, h('h3', { text: '👑 Суперадмины' }),
       h('div', { text: res.superadmins.join(', ') }),
-      h('div', { class: 'note', text: 'Суперадмины задаются в настройках бота (SUPERADMIN_IDS в .env или lib/config.js в Serverless).' })));
+      h('div', { class: 'note', text: 'Суперадмины задаются в настройке SUPERADMIN_IDS (файл .env или секрет GitHub).' })));
   } catch (e) { toast(e.message); }
 }
 

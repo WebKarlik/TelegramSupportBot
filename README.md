@@ -142,30 +142,48 @@ cp .env.example .env && nano .env
 2. Там же откройте **CLI Access** и скопируйте **Access token** (вида `app123…:…`).
    Это **не** токен бота, а отдельный ключ для деплоя. Никому его не показывайте.
 
-### 2. Настройте проект
+### Где хранятся ваши настройки
+
+Репозиторий публичный, поэтому личные настройки (ваш Telegram ID и т.п.) **в код не вписываются**.
+Перед каждым деплоем скрипт `scripts/configure.mjs` создаёт файл `tgcloud/lib/settings.js` из секретов
+GitHub или из локального `.env`. Этот файл в `.gitignore` — в репозиторий он не попадает, но выкладывается
+на платформу вместе с ботом. Адрес мини-приложения (`https://app<id>.tgcloud.ai/`) вычисляется
+автоматически из Access token.
+
+| Настройка | Обязательно | Что это |
+|---|---|---|
+| `SUPERADMIN_IDS` | да | ваш Telegram ID (узнать: [@userinfobot](https://t.me/userinfobot)), можно несколько через запятую |
+| `SUPPORT_NAME` | нет | название сервиса, по умолчанию `PotatVPN` |
+| `WEBAPP_URL` | нет | адрес мини-приложения, если вычисленный автоматически не подошёл |
+
+### 2а. Деплой через GitHub (без установки чего-либо)
+
+1. В репозитории: **Settings → Secrets and variables → Actions → New repository secret** — добавьте два секрета:
+   - `TGCLOUD_TOKEN` — Access token из шага 1;
+   - `SUPERADMIN_IDS` — ваш Telegram ID.
+2. Откройте **Actions → Telegram Serverless → Run workflow** (или просто сделайте любой коммит в `main`).
+   Workflow прогонит тесты, выложит бота и мини-приложение и создаст таблицы в базе.
+3. Напишите боту `/start` — придёт справка администратора и кнопка **«Панель»**.
+
+Дальше каждое изменение в `main` выкладывается автоматически. Секреты не видны ни в коде, ни в логах.
+Если в логе шага «Деплой» адрес мини-приложения отличается от `https://app<id>.tgcloud.ai/`,
+добавьте его во вкладке **Variables** как `WEBAPP_URL` и перезапустите workflow.
+
+### 2б. Деплой со своего компьютера
 
 Нужен [Node.js](https://nodejs.org) 22 или новее.
 
 ```bash
-git clone https://github.com/WebKarlik/TelegramSupportBot.git && cd TelegramSupportBot
+git clone https://github.com/WebKarlik/TelegramSupportBot.git && cd TelegramSupportBot && npm install
 ```
-```bash
-npm install
+Создайте в папке проекта файл `.env` (он тоже в `.gitignore`) со строкой:
 ```
-
-Откройте `tgcloud/lib/config.js` и впишите свой Telegram ID в `SUPERADMIN_IDS`:
-```js
-export const SUPERADMIN_IDS = [
-  123456789,
-];
+SUPERADMIN_IDS=123456789
 ```
-
-### 3. Задеплойте
-
+Затем:
 ```bash
 npx tgcloud login
 ```
-Вставьте Access token из шага 1. Затем:
 ```bash
 npm run deploy
 ```
@@ -173,34 +191,19 @@ npm run deploy
 npx tgcloud migrate
 ```
 
-`deploy` загружает код и мини-приложение, `migrate` создаёт таблицы в базе (подтвердите изменения).
-Webhook Telegram настраивает сама платформа. Если раньше бот работал на сервере — остановите его (`docker compose down`).
+`login` попросит Access token из шага 1, `deploy` подставит настройки и выложит код с мини-приложением,
+`migrate` создаст таблицы (подтвердите изменения). Используйте именно `npm run deploy`, а не `npx tgcloud push`:
+без него не создастся файл настроек.
 
-### 4. Подключите мини-приложение
+### Важно
 
-1. `npm run deploy` печатает адрес мини-приложения вида `https://app<id>.tgcloud.ai/`.
-2. Вставьте его в `WEBAPP_URL` в `tgcloud/lib/config.js` и снова выполните `npm run deploy`.
-3. Напишите боту `/start` — у вас (и у каждого добавленного админа) появится кнопка **«Панель»**.
-
-Обычные пользователи панель не видят, а если откроют ссылку — получат отказ: доступ проверяется по подписи Telegram.
-
-### Проверка и обновление
-
-```bash
-npx tgcloud status
-```
-```bash
-npx tgcloud webhook
-```
-
-После изменений в коде — `npm run deploy`; если менялась `tgcloud/schema.js` — ещё `npx tgcloud migrate`.
-
-### Автодеплой из GitHub (необязательно)
-
-Добавьте Access token в репозиторий: **Settings → Secrets and variables → Actions → New repository secret**,
-имя `TGCLOUD_TOKEN`. После этого каждое изменение в `main` автоматически выкладывается в Serverless
-(workflow `.github/workflows/serverless.yml`: тесты → `tgcloud push` → безопасные миграции).
-Без секрета этот workflow просто пропускается.
+- Webhook настраивает сама платформа. **Серверную версию нужно остановить** (`docker compose down`):
+  при запуске она снимает webhook, и Serverless перестаёт получать сообщения.
+  Если бот не отвечает — `npx tgcloud webhook` покажет состояние, `npx tgcloud webhook sync` починит.
+- Мини-приложение (HTML) публичное, но данных в нём нет: всё отдаётся только админам после проверки
+  подписи Telegram на стороне платформы.
+- Если менялась `tgcloud/schema.js`, после деплоя нужен `npx tgcloud migrate`
+  (GitHub-workflow применяет только безопасные изменения — новые таблицы и столбцы).
 
 ---
 
