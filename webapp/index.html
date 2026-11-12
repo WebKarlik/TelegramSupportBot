@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Панель поддержки</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --bg2: var(--tg-theme-secondary-bg-color, #f1f2f6);
+    --text: var(--tg-theme-text-color, #111111);
+    --hint: var(--tg-theme-hint-color, #8a8f98);
+    --link: var(--tg-theme-link-color, #2481cc);
+    --accent: var(--tg-theme-button-color, #2481cc);
+    --accent-text: var(--tg-theme-button-text-color, #ffffff);
+    --section: var(--tg-theme-section-bg-color, var(--bg));
+    --sep: var(--tg-theme-section-separator-color, rgba(127,127,127,.18));
+    --danger: var(--tg-theme-destructive-text-color, #e5484d);
+    --ok: #2fb36b;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg2); color: var(--text);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  button { font: inherit; cursor: pointer; border: 0; }
+  input, textarea { font: inherit; color: var(--text); }
+  .hidden { display: none !important; }
+  .muted { color: var(--hint); }
+
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg2); padding: 12px 12px 8px; }
+  .title { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .chip { background: var(--section); border-radius: 999px; padding: 4px 10px; font-size: 13px; }
+  .chip b { font-weight: 700; }
+  .chip.warn b { color: var(--danger); }
+  .tabs { display: flex; background: var(--section); border-radius: 10px; padding: 3px; gap: 3px; }
+  .tabs button { flex: 1; background: transparent; color: var(--text); padding: 7px 4px; border-radius: 8px; font-size: 14px; }
+  .tabs button.active { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+  .search { margin-top: 8px; width: 100%; padding: 9px 12px; border-radius: 10px; border: 0;
+    background: var(--section); outline: none; }
+
+  main { padding: 0 12px 24px; }
+  .list { background: var(--section); border-radius: var(--radius); overflow: hidden; }
+  .item { display: flex; gap: 10px; padding: 11px 12px; border-bottom: 1px solid var(--sep); cursor: pointer; }
+  .item:last-child { border-bottom: 0; }
+  .item:active { background: var(--bg2); }
+  .avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 16px; }
+  .item .body { flex: 1; min-width: 0; }
+  .row { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .time { font-size: 12px; color: var(--hint); flex: none; }
+  .preview { color: var(--hint); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+    color: #fff; background: var(--danger); margin-left: 6px; vertical-align: 1px; }
+  .badge.ok { background: var(--ok); }
+  .badge.gray { background: var(--hint); }
+  .empty { text-align: center; padding: 48px 16px; color: var(--hint); }
+  .empty .big { font-size: 40px; margin-bottom: 6px; }
+
+  /* Ticket view */
+  #ticket { display: flex; flex-direction: column; min-height: 100vh; }
+  .t-head { position: sticky; top: 0; z-index: 5; background: var(--section); padding: 10px 12px;
+    border-bottom: 1px solid var(--sep); display: flex; gap: 10px; align-items: center; }
+  .t-head .body { flex: 1; min-width: 0; }
+  .t-head .sub { font-size: 13px; color: var(--hint); }
+  .t-head a { color: var(--link); text-decoration: none; }
+  .btn { background: var(--accent); color: var(--accent-text); padding: 8px 14px; border-radius: 10px; font-weight: 600; }
+  .btn.secondary { background: var(--bg2); color: var(--text); }
+  .btn.danger { background: transparent; color: var(--danger); }
+  .btn:disabled { opacity: .5; }
+  .msgs { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .day { align-self: center; font-size: 12px; color: var(--hint); background: var(--section);
+    padding: 2px 10px; border-radius: 999px; margin: 6px 0; }
+  .bubble { max-width: 82%; padding: 7px 10px 5px; border-radius: 14px; background: var(--section);
+    white-space: pre-wrap; word-wrap: break-word; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .bubble.admin { align-self: flex-end; background: var(--accent); color: var(--accent-text);
+    border-bottom-left-radius: 14px; border-bottom-right-radius: 4px; }
+  .bubble .meta { font-size: 11px; opacity: .7; text-align: right; margin-top: 2px; }
+  .bubble img, .bubble video { display: block; max-width: 100%; max-height: 320px; border-radius: 10px; margin-bottom: 4px; }
+  .bubble audio { max-width: 100%; margin-bottom: 4px; }
+  .media-btn { background: rgba(127,127,127,.18); color: inherit; padding: 6px 10px; border-radius: 8px;
+    margin-bottom: 4px; font-size: 14px; }
+  .composer { position: sticky; bottom: 0; background: var(--section); border-top: 1px solid var(--sep);
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+  .composer .row { align-items: flex-end; }
+  .composer textarea { flex: 1; resize: none; border: 0; outline: none; background: var(--bg2); border-radius: 18px;
+    padding: 9px 14px; max-height: 140px; min-height: 38px; }
+  .send { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: var(--accent-text);
+    font-size: 18px; flex: none; }
+  .closed-note { text-align: center; padding: 10px; color: var(--hint); font-size: 14px; }
+
+  /* Admins */
+  .card { background: var(--section); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; }
+  .card h3 { margin: 0 0 8px; font-size: 15px; }
+  .field { width: 100%; padding: 9px 12px; border-radius: 10px; border: 0; background: var(--bg2);
+    outline: none; margin-bottom: 8px; }
+  .admin-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0;
+    border-bottom: 1px solid var(--sep); }
+  .admin-row:last-child { border-bottom: 0; }
+  .note { font-size: 13px; color: var(--hint); margin-top: 4px; }
+
+  .toast { position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%); background: rgba(0,0,0,.82);
+    color: #fff; padding: 9px 14px; border-radius: 10px; font-size: 14px; z-index: 50; max-width: 90%; text-align: center; }
+  .error-screen { padding: 64px 24px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div id="home">
+  <header>
+    <h1 class="title" id="title">Поддержка</h1>
+    <div class="stats" id="stats"></div>
+    <div class="tabs" id="tabs">
+      <button data-tab="open" class="active">Открытые</button>
+      <button data-tab="closed">Закрытые</button>
+      <button data-tab="all">Все</button>
+      <button data-tab="admins" class="hidden" id="tab-admins">👑 Админы</button>
+    </div>
+    <input class="search" id="search" type="search" placeholder="Поиск: имя, @username, ID, #номер, текст">
+  </header>
+  <main>
+    <div id="list-view"><div class="list" id="list"></div></div>
+    <div id="admins-view" class="hidden"></div>
+  </main>
+</div>
+
+<div id="ticket" class="hidden">
+  <div class="t-head" id="t-head"></div>
+  <div class="msgs" id="msgs"></div>
+  <div class="composer" id="composer">
+    <div class="row">
+      <textarea id="reply" rows="1" placeholder="Ответ пользователю…"></textarea>
+      <button class="send" id="send" title="Отправить">➤</button>
+    </div>
+  </div>
+  <div class="closed-note hidden" id="closed-note"></div>
+</div>
+
+<div id="fatal" class="error-screen hidden"></div>
+
+<script>
+'use strict';
+const tg = window.Telegram && window.Telegram.WebApp;
+// На хостинге Telegram Serverless (app<id>.tgcloud.ai) вызываем endpoints платформы,
+// на своём сервере — тот же набор методов через POST /api/<метод>.
+const USE_SERVERLESS = !!(tg && tg.Serverless && /\.tgcloud\.ai$/.test(location.hostname));
+
+function api(method, input) {
+  input = input || {};
+  if (USE_SERVERLESS) {
+    return new Promise(function (resolve, reject) {
+      tg.Serverless.call(method, input, function (err, result) {
+        if (err) reject(new Error(err.message || err.type || 'Ошибка'));
+        else resolve(result);
+      });
+    });
+  }
+  return fetch('api/' + method, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'tma ' + ((tg && tg.initData) || '') },
+    body: JSON.stringify(input),
+  }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (j) {
+      if (!r.ok) { const e = new Error(j.error || ('Ошибка ' + r.status)); e.status = r.status; throw e; }
+      return j;
+    });
+  });
+}
+
+// ---------- helpers ----------
+function h(tag, attrs) {
+  const el = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    const v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'text') el.textContent = v;
+    else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (let i = 2; i < arguments.length; i++) {
+    const c = arguments[i];
+    if (c == null || c === false) continue;
+    el.append(c instanceof Node ? c : String(c));
+  }
+  return el;
+}
+const $ = function (id) { return document.getElementById(id); };
+function toast(text) {
+  const t = h('div', { class: 'toast', text: text });
+  document.body.append(t);
+  setTimeout(function () { t.remove(); }, 2600);
+}
+function haptic(type) { try { tg.HapticFeedback.notificationOccurred(type); } catch (e) {} }
+function confirmDialog(text) {
+  return new Promise(function (resolve) {
+    if (tg && tg.showConfirm && tg.platform !== 'unknown') tg.showConfirm(text, resolve);
+    else resolve(window.confirm(text));
+  });
+}
+function parseDate(s) { return s ? new Date(s.indexOf('T') > 0 && !/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s + 'Z' : s) : null; }
+function fmtTime(s) {
+  const d = parseDate(s); if (!d) return '';
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+  const diff = (now - d) / 86400000;
+  if (diff < 6) return d.toLocaleDateString('ru', { weekday: 'short' });
+  return d.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
+}
+function fmtDay(d) { return d.toLocaleDateString('ru', { day: 'numeric', month: 'long', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined }); }
+const COLORS = ['#e17076', '#7bc862', '#65aadd', '#a695e7', '#ee7aae', '#6ec9cb', '#faa774'];
+function avatar(t) {
+  const name = t.user_name || String(t.user_id);
+  return h('div', { class: 'avatar', style: 'background:' + COLORS[Math.abs(t.user_id) % COLORS.length] },
+    (name.trim()[0] || '?').toUpperCase());
+}
+const MEDIA_LABELS = { photo: '🖼 Фото', animation: '🎞 GIF', video: '🎬 Видео', video_note: '⏺ Видеосообщение',
+  voice: '🎤 Голосовое', audio: '🎵 Аудио', sticker: '🏷 Стикер', document: '📎 Файл' };
+
+// ---------- state ----------
+const state = { me: null, tab: 'open', q: '', ticketId: null, lastMsgCount: 0, timer: null };
+
+function renderStats(stats) {
+  const el = $('stats'); el.textContent = '';
+  el.append(
+    h('span', { class: 'chip' + (stats.waiting ? ' warn' : '') }, 'Ждут ответа: ', h('b', { text: stats.waiting })),
+    h('span', { class: 'chip' }, 'Открыто: ', h('b', { text: stats.open })),
+    h('span', { class: 'chip' }, 'Закрыто: ', h('b', { text: stats.closed })),
+  );
+}
+
+// ---------- list ----------
+let listSeq = 0;
+async function loadList(silent) {
+  const seq = ++listSeq;
+  try {
+    const res = await api('listTickets', { status: state.tab, q: state.q });
+    if (seq !== listSeq || state.tab === 'admins') return;
+    renderStats(res.stats);
+    renderList(res.tickets);
+  } catch (e) { if (!silent) toast(e.message); }
+}
+
+function renderList(tickets) {
+  const list = $('list'); list.textContent = '';
+  if (!tickets.length) {
+    list.append(h('div', { class: 'empty' },
+      h('div', { class: 'big', text: state.q ? '🔍' : '🎉' }),
+      state.q ? 'Ничего не найдено' : (state.tab === 'open' ? 'Открытых обращений нет' : 'Здесь пока пусто')));
+    return;
+  }
+  tickets.forEach(function (t) {
+    let badge = null;
+    if (t.status === 'closed') badge = h('span', { class: 'badge gray', text: 'закрыто' });
+    else if (t.last_sender === 'user') badge = h('span', { class: 'badge', text: 'ждёт' });
+    const who = t.user_name || ('ID ' + t.user_id);
+    list.append(h('div', { class: 'item', onclick: function () { openTicket(t.id); } },
+      avatar(t),
+      h('div', { class: 'body' },
+        h('div', { class: 'row' },
+          h('div', { class: 'name' }, '#' + t.id + ' · ' + who, badge),
+          h('div', { class: 'time', text: fmtTime(t.updated_at) })),
+        h('div', { class: 'preview' }, (t.last_sender === 'admin' ? 'Вы: ' : '') + (t.last_text || '—')))));
+  });
+}
+
+// ---------- ticket ----------
+const fileCache = {};
+function loadFile(messageId) {
+  if (!fileCache[messageId]) {
+    fileCache[messageId] = api('getFile', { message_id: messageId }).then(function (r) {
+      return 'data:' + r.mime + ';base64,' + r.data;
+    });
+    fileCache[messageId].catch(function () { delete fileCache[messageId]; });
+  }
+  return fileCache[messageId];
+}
+
+function mediaNode(m) {
+  const label = MEDIA_LABELS[m.media_type] || '📎 Вложение';
+  const holder = h('div');
+  if (!m.has_file) { holder.append(h('div', { class: 'muted', text: label })); return holder; }
+  function show(url) {
+    holder.textContent = '';
+    if (m.media_type === 'photo' || m.media_type === 'sticker') holder.append(h('img', { src: url, alt: label }));
+    else if (/video|animation/.test(m.media_type)) holder.append(h('video', { src: url, controls: true, playsinline: true }));
+    else if (/voice|audio/.test(m.media_type)) holder.append(h('audio', { src: url, controls: true }));
+    else holder.append(h('a', { href: url, download: 'file', style: 'color:inherit', text: label + ' — открыть' }));
+  }
+  function load(btn) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Загрузка…'; }
+    loadFile(m.id).then(show, function (e) {
+      holder.textContent = '';
+      holder.append(h('div', { class: 'muted', text: label + ': ' + e.message }));
+    });
+  }
+  if (m.media_type === 'photo' || m.media_type === 'sticker') { holder.append(h('div', { class: 'muted', text: label + '…' })); load(); }
+  else { const b = h('button', { class: 'media-btn', text: label + ' — показать', onclick: function () { load(b); } }); holder.append(b); }
+  return holder;
+}
+
+function renderTicketHead(t) {
+  const head = $('t-head'); head.textContent = '';
+  const userLink = t.username
+    ? h('a', { href: '#', onclick: function (e) { e.preventDefault(); tg ? tg.openTelegramLink('https://t.me/' + t.username) : open('https://t.me/' + t.username); }, text: '@' + t.username })
+    : null;
+  head.append(avatar(t), h('div', { class: 'body' },
+    h('div', { class: 'name' }, '#' + t.id + ' · ' + (t.user_name || 'Без имени')),
+    h('div', { class: 'sub' }, userLink, userLink ? ' · ' : '', 'ID ' + t.user_id)));
+  if (t.status === 'open') head.append(h('button', { class: 'btn secondary', text: '✅ Закрыть', onclick: closeTicket }));
+  else head.append(h('button', { class: 'btn secondary', text: '♻️ Открыть', onclick: reopenTicket }));
+}
+
+function renderMessages(messages, forceScroll) {
+  const box = $('msgs');
+  const nearBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 80;
+  box.textContent = '';
+  let lastDay = '';
+  messages.forEach(function (m) {
+    const d = parseDate(m.created_at);
+    const day = d ? d.toDateString() : '';
+    if (day && day !== lastDay) { box.append(h('div', { class: 'day', text: fmtDay(d) })); lastDay = day; }
+    const who = m.admin_id && state.me && m.admin_id === state.me.user_id ? 'Вы' : (m.admin_name || 'Админ');
+    const meta = (m.sender === 'admin' ? who + ' · ' : '') +
+      (d ? d.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }) : '');
+    box.append(h('div', { class: 'bubble ' + m.sender },
+      m.media_type ? mediaNode(m) : null,
+      m.text ? h('div', { text: m.text }) : null,
+      h('div', { class: 'meta', text: meta })));
+  });
+  if (forceScroll || nearBottom) window.scrollTo(0, document.body.scrollHeight);
+}
+
+async function loadTicket(force) {
+  const id = state.ticketId;
+  try {
+    const res = await api('getTicket', { id: id });
+    if (id !== state.ticketId) return;
+    renderTicketHead(res.ticket);
+    const closed = res.ticket.status === 'closed';
+    $('composer').classList.toggle('hidden', closed);
+    $('closed-note').classList.toggle('hidden', !closed);
+    $('closed-note').textContent = closed ? 'Обращение закрыто. Если пользователь напишет снова, откроется новое.' : '';
+    if (force || res.messages.length !== state.lastMsgCount) {
+      renderMessages(res.messages, force || res.messages.length > state.lastMsgCount);
+      state.lastMsgCount = res.messages.length;
+    }
+  } catch (e) {
+    if (force) { toast(e.message); showHome(); }
+  }
+}
+
+function openTicket(id) {
+  state.ticketId = id; state.lastMsgCount = 0;
+  $('home').classList.add('hidden'); $('ticket').classList.remove('hidden');
+  $('msgs').textContent = ''; $('t-head').textContent = '';
+  if (tg) tg.BackButton.show();
+  history.replaceState(null, '', '#ticket=' + id);
+  loadTicket(true);
+}
+
+function showHome() {
+  state.ticketId = null;
+  $('ticket').classList.add('hidden'); $('home').classList.remove('hidden');
+  if (tg) tg.BackButton.hide();
+  history.replaceState(null, '', location.pathname);
+  if (state.tab === 'admins') loadAdmins(); else loadList();
+}
+
+async function sendReply() {
+  const ta = $('reply'); const text = ta.value.trim();
+  if (!text) return;
+  const btn = $('send'); btn.disabled = true;
+  try {
+    await api('replyTicket', { id: state.ticketId, text: text });
+    ta.value = ''; autosize();
+    haptic('success');
+    await loadTicket(true);
+  } catch (e) { haptic('error'); toast(e.message); }
+  finally { btn.disabled = false; }
+}
+
+async function closeTicket() {
+  if (!(await confirmDialog('Закрыть обращение #' + state.ticketId + '? Пользователь получит уведомление.'))) return;
+  try { await api('closeTicket', { id: state.ticketId }); haptic('success'); toast('Обращение закрыто'); showHome(); }
+  catch (e) { toast(e.message); }
+}
+
+async function reopenTicket() {
+  try { await api('reopenTicket', { id: state.ticketId }); haptic('success'); await loadTicket(true); }
+  catch (e) { toast(e.message); }
+}
+
+function autosize() { const ta = $('reply'); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }
+
+// ---------- admins (superadmin) ----------
+async function loadAdmins() {
+  const view = $('admins-view');
+  try {
+    const res = await api('listAdmins');
+    view.textContent = '';
+    const idInput = h('input', { class: 'field', inputmode: 'numeric', placeholder: 'Telegram ID, например 123456789' });
+    const nameInput = h('input', { class: 'field', placeholder: 'Имя (необязательно)' });
+    const addBtn = h('button', { class: 'btn', text: 'Добавить админа', onclick: async function () {
+      const uid = idInput.value.trim();
+      if (!/^\d+$/.test(uid)) { toast('Введите числовой Telegram ID'); return; }
+      addBtn.disabled = true;
+      try { await api('addAdmin', { user_id: Number(uid), name: nameInput.value.trim() }); haptic('success'); toast('Админ добавлен'); loadAdmins(); }
+      catch (e) { haptic('error'); toast(e.message); addBtn.disabled = false; }
+    } });
+    view.append(h('div', { class: 'card' }, h('h3', { text: '➕ Новый админ' }), idInput, nameInput, addBtn,
+      h('div', { class: 'note', text: 'Проще всего добавить из чата с ботом: команда /addadmin и кнопка «Выбрать пользователя». Новый админ должен хотя бы раз нажать /start у бота.' })));
+
+    const list = h('div', { class: 'card' }, h('h3', { text: '🛠 Админы (' + res.admins.length + ')' }));
+    if (!res.admins.length) list.append(h('div', { class: 'muted', text: 'Пока никого нет' }));
+    res.admins.forEach(function (a) {
+      list.append(h('div', { class: 'admin-row' },
+        h('div', null, h('div', { text: a.name || 'Без имени' }), h('div', { class: 'note', text: 'ID ' + a.user_id })),
+        h('button', { class: 'btn danger', text: 'Удалить', onclick: async function () {
+          if (!(await confirmDialog('Убрать ' + (a.name || a.user_id) + ' из админов?'))) return;
+          try { await api('deleteAdmin', { user_id: a.user_id }); haptic('success'); loadAdmins(); }
+          catch (e) { toast(e.message); }
+        } })));
+    });
+    view.append(list);
+    view.append(h('div', { class: 'card' }, h('h3', { text: '👑 Суперадмины' }),
+      h('div', { text: res.superadmins.join(', ') }),
+      h('div', { class: 'note', text: 'Суперадмины задаются в настройках бота (SUPERADMIN_IDS в .env или lib/config.js в Serverless).' })));
+  } catch (e) { toast(e.message); }
+}
+
+// ---------- wiring ----------
+function selectTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('#tabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === tab); });
+  const admins = tab === 'admins';
+  $('list-view').classList.toggle('hidden', admins);
+  $('search').classList.toggle('hidden', admins);
+  $('admins-view').classList.toggle('hidden', !admins);
+  if (admins) loadAdmins(); else { $('list').textContent = ''; loadList(); }
+}
+
+function fatal(text) {
+  $('home').classList.add('hidden'); $('ticket').classList.add('hidden');
+  const f = $('fatal'); f.classList.remove('hidden'); f.textContent = '';
+  f.append(h('div', { style: 'font-size:48px', text: '🔒' }), h('p', { text: text }));
+}
+
+async function init() {
+  if (tg) {
+    tg.ready(); tg.expand();
+    try { tg.setHeaderColor('secondary_bg_color'); tg.setBackgroundColor('secondary_bg_color'); } catch (e) {}
+    tg.BackButton.onClick(showHome);
+  }
+  if (!tg || !tg.initData) { fatal('Откройте панель из Telegram — через кнопку «Панель» в чате с ботом.'); return; }
+
+  document.querySelectorAll('#tabs button').forEach(function (b) { b.addEventListener('click', function () { selectTab(b.dataset.tab); }); });
+  let deb;
+  $('search').addEventListener('input', function (e) { clearTimeout(deb); deb = setTimeout(function () { state.q = e.target.value.trim(); loadList(); }, 300); });
+  $('send').addEventListener('click', sendReply);
+  $('reply').addEventListener('input', autosize);
+  $('reply').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendReply(); });
+
+  try {
+    state.me = await api('me');
+  } catch (e) {
+    fatal(e.status === 403 || /админ/i.test(e.message) ? 'Панель доступна только администраторам поддержки.' : e.message);
+    return;
+  }
+  $('title').textContent = 'Поддержка ' + (state.me.support_name || '');
+  renderStats(state.me.stats);
+  if (state.me.is_superadmin) $('tab-admins').classList.remove('hidden');
+
+  const m = /ticket=(\d+)/.exec(location.hash) || /^t(\d+)$/.exec((tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '');
+  if (m) openTicket(Number(m[1])); else loadList();
+
+  state.timer = setInterval(function () {
+    if (document.hidden) return;
+    if (state.ticketId) loadTicket(false);
+    else if (state.tab !== 'admins') loadList(true);
+  }, 8000);
+}
+init();
+</script>
+</body>
+</html>

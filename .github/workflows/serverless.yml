@@ -1,0 +1,39 @@
+# Автодеплой версии для Telegram Serverless (папки tgcloud/ и webapp/).
+# Работает, только если в Settings → Secrets and variables → Actions добавлен секрет
+# TGCLOUD_TOKEN (BotFather → бот → Serverless → CLI Access). Без него workflow просто пропускается.
+name: Telegram Serverless
+
+on:
+  push:
+    branches: [main]
+    paths: ["tgcloud/**", "webapp/**", "tgcloud.jsonc", "package*.json"]
+  workflow_dispatch:
+
+concurrency: serverless-deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN }}
+    steps:
+      - name: Проверка токена
+        if: env.TGCLOUD_TOKEN == ''
+        run: echo "::notice::Секрет TGCLOUD_TOKEN не задан — деплой в Telegram Serverless пропущен."
+      - uses: actions/checkout@v4
+        if: env.TGCLOUD_TOKEN != ''
+      - uses: actions/setup-node@v4
+        if: env.TGCLOUD_TOKEN != ''
+        with:
+          node-version: 22
+          cache: npm
+      - if: env.TGCLOUD_TOKEN != ''
+        run: npm ci
+      - if: env.TGCLOUD_TOKEN != ''
+        run: npm test
+      - name: Деплой кода и мини-приложения
+        if: env.TGCLOUD_TOKEN != ''
+        run: npx tgcloud push
+      - name: Безопасные изменения схемы БД (новые таблицы/столбцы)
+        if: env.TGCLOUD_TOKEN != ''
+        run: npx tgcloud migrate --safe

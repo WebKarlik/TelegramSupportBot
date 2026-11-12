@@ -1,0 +1,13 @@
+{
+  // Telegram Serverless: настройки проекта. Документация: https://core.telegram.org/bots/serverless
+  "$schema": "./node_modules/@tgcloud/cli/schema/tgcloud.json",
+
+  // Мини-приложение (панель поддержки) — одна страница из папки webapp/.
+  // После `npx tgcloud push` оно доступно по адресу https://app<id>.tgcloud.ai/
+  "static": {
+    "source": "webapp",
+    "headers": [
+      { "path": "/*", "set": { "Referrer-Policy": "no-referrer" } }
+    ]
+  }
+}
