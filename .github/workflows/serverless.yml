@@ -49,6 +49,11 @@ jobs:
         run: npm ci
       - if: env.TGCLOUD_TOKEN != ''
         run: npm test
+      # Каждый запуск CI начинается с чистой машины без .tgcloud/ — подтягиваем из облака
+      # номер текущей версии, чтобы push знал, от чего считать изменения.
+      - name: Состояние бота в облаке
+        if: env.TGCLOUD_TOKEN != ''
+        run: npx tgcloud fetch
       - name: Деплой кода и мини-приложения
         if: env.TGCLOUD_TOKEN != ''
         run: npm run deploy
