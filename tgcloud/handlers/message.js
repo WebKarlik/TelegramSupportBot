@@ -82,7 +82,7 @@ async function handleAdmin(message, uid) {
       case 'panel':
         return S.WEBAPP_URL
           ? send(uid, 'Панель поддержки:', { reply_markup: S.panelKeyboard() })
-          : send(uid, 'Мини-приложение не настроено: укажите WEBAPP_URL в tgcloud/lib/config.js');
+          : send(uid, 'Мини-приложение не настроено: задайте WEBAPP_URL в настройках и сделайте деплой');
       case 'cancel': {
         const s = await store.getSession(`reply:${uid}`);
         if (!s) return send(uid, '⛔ Нет активного ответа для отмены.');
@@ -211,5 +211,5 @@ async function delAdminCommand(uid, args) {
   }
   return send(uid, (await S.removeAdmin(Number(args)))
     ? `✅ Админ ${args} удалён.`
-    : 'ℹ️ Такого админа нет (суперадминов можно убрать только в lib/config.js).');
+    : 'ℹ️ Такого админа нет (суперадминов можно убрать только в настройке SUPERADMIN_IDS).');
 }

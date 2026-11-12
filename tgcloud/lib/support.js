@@ -65,7 +65,7 @@ export async function addAdmin(userId, name, addedBy) {
 // Текст и клавиатура списка админов (для /admins и после удаления).
 export async function adminsView() {
   const admins = await store.listAdmins();
-  const lines = ['👑 Суперадмины (из lib/config.js):', ...SUPERADMIN_IDS.map((id) => `• ${id}`), '', '🛠 Админы:'];
+  const lines = ['👑 Суперадмины (из настроек SUPERADMIN_IDS):', ...SUPERADMIN_IDS.map((id) => `• ${id}`), '', '🛠 Админы:'];
   const rows = [];
   if (!admins.length) lines.push('— пока никого. Добавить: /addadmin');
   for (const a of admins) {

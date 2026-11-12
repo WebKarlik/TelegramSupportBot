@@ -20,3 +20,6 @@ node_modules/
 # IDE
 .idea/
 .vscode/
+
+# Сгенерированные личные настройки Telegram Serverless
+tgcloud/lib/settings.js

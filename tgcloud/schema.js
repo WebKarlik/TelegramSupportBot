@@ -2,7 +2,7 @@
 // Применить изменения схемы: npx tgcloud push && npx tgcloud migrate
 import { table, integer, text, index, uniqueIndex } from 'sdk/db';
 
-// Админы, которых добавил суперадмин. Суперадмины задаются в lib/config.js.
+// Админы, которых добавил суперадмин. Суперадмины задаются настройкой SUPERADMIN_IDS.
 export const admins = table('admins', {
   userId: integer('user_id').primaryKey(),
   name: text('name'),
