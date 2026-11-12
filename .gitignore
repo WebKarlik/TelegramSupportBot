@@ -1,0 +1,22 @@
+# Секреты и данные
+.env
+data/
+tickets.json
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Node / Telegram Serverless
+node_modules/
+.tgcloud/
+
+# IDE
+.idea/
+.vscode/

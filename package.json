@@ -1,0 +1,21 @@
+{
+  "name": "telegram-support-bot",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Бот поддержки для Telegram: версия для Telegram Serverless (папка tgcloud/). Python-версия — в папке bot/.",
+  "scripts": {
+    "login": "tgcloud login",
+    "deploy": "tgcloud push",
+    "migrate": "tgcloud migrate",
+    "status": "tgcloud status",
+    "webhook": "tgcloud webhook",
+    "test": "node --test tests/serverless/bot.test.mjs"
+  },
+  "devDependencies": {
+    "@tgcloud/cli": "^0.2.0"
+  },
+  "engines": {
+    "node": ">=22.5"
+  }
+}

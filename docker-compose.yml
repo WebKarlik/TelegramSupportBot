@@ -1,0 +1,32 @@
+# Запуск:   docker compose up -d
+# Обновить: docker compose pull && docker compose up -d
+services:
+  bot:
+    image: ghcr.io/webkarlik/telegramsupportbot:latest
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - bot-data:/app/data   # база SQLite переживает обновления и перезапуски
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  # HTTPS для мини-приложения (Let's Encrypt, автоматически).
+  # Включается строкой COMPOSE_PROFILES=webapp в .env, нужен домен WEBAPP_DOMAIN,
+  # который указывает на этот сервер, и открытые порты 80 и 443.
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["webapp"]
+    restart: unless-stopped
+    command: caddy reverse-proxy --from ${WEBAPP_DOMAIN:-localhost} --to bot:8080
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+    depends_on:
+      - bot
+
+volumes:
+  bot-data:
+  caddy-data:

@@ -1,0 +1,11 @@
+.git
+.github
+.env
+.env.*
+data
+tests
+tgcloud
+node_modules
+.tgcloud
+**/__pycache__
+*.md
