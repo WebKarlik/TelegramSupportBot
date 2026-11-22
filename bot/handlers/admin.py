@@ -5,9 +5,10 @@ from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, ReplyKeyboardRemove
 
 from ..filters import IsAdmin
+from .user import LEGACY_BUTTONS
 from ..services import MEDIA_LABELS, SupportService, ticket_title
 
 log = logging.getLogger(__name__)
@@ -41,13 +42,17 @@ def _ticket_id(data: str) -> int | None:
 
 @router.message(CommandStart())
 @router.message(Command("help"))
+@router.message(F.text.regexp(LEGACY_BUTTONS))
 async def admin_help(message: Message, service: SupportService):
     text = HELP
     if service.config.webapp_url:
         text += "/panel — открыть панель (мини-приложение)\n"
     if service.is_superadmin(message.from_user.id):
         text += "\n👑 Суперадмин:\n/admins — список админов\n/addadmin — добавить админа\n/deladmin ID — удалить админа\n"
-    await message.answer(text, reply_markup=service.panel_keyboard())
+    # Отдельным сообщением: в одном нельзя и убрать старую клавиатуру, и показать inline-кнопку.
+    await message.answer(text, reply_markup=ReplyKeyboardRemove())
+    if service.config.webapp_url:
+        await message.answer("🗂 Панель поддержки:", reply_markup=service.panel_keyboard())
 
 
 @router.message(Command("panel"))

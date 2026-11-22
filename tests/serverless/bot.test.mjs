@@ -175,6 +175,21 @@ test('endpoints: файлы и админы', async () => {
   await assert.rejects(ep('me', {}, ADMIN), /только для администраторов/i);
 });
 
+test('старая клавиатура убирается, её кнопки не создают обращений', async () => {
+  await say(USER, '✏️ Написать запрос');
+  await say(USER, '✉️ Мои запросы');
+  assert.equal(await store.getOpenTicket(USER), null);
+  for (const p of sdk.sent('sendMessage', USER)) assert.deepEqual(p.reply_markup, { remove_keyboard: true });
+  await say(USER, 'настоящий вопрос');
+  assert.deepEqual(sdk.sent('sendMessage', USER).at(-1).reply_markup, { remove_keyboard: true });
+  sdk.calls.length = 0;
+  await say(SUPER, '/start');
+  assert.deepEqual(sdk.sent('sendMessage', SUPER)[0].reply_markup, { remove_keyboard: true });
+  sdk.calls.length = 0;
+  await say(SUPER, '✏️ Написать запрос');
+  assert.match(texts(SUPER)[0], /администратор поддержки/);
+});
+
 test('base64 совпадает с эталоном', () => {
   for (const len of [0, 1, 2, 3, 4, 5, 100]) {
     const bytes = Uint8Array.from({ length: len }, (_, i) => (i * 37 + 11) % 256);

@@ -126,3 +126,16 @@ async def test_legacy_json_import(env, tmp_path):
     assert (await env.db.get_open_ticket(66))["id"] == 2
     assert [m["text"] for m in await env.db.get_messages(1)] == ["старое", "ответ"]
     assert not legacy.exists()
+
+
+async def test_legacy_keyboard_is_removed(env):
+    from aiogram.types import ReplyKeyboardRemove
+    await env.send(USER, "✏️ Написать запрос")
+    assert await env.db.get_open_ticket(USER) is None
+    assert isinstance(env.session.sent(USER)[0].reply_markup, ReplyKeyboardRemove)
+    await env.send(USER, "/start")
+    assert isinstance(env.session.sent(USER)[-1].reply_markup, ReplyKeyboardRemove)
+    env.session.calls.clear()
+    await env.send(SUPER, "/start")
+    assert isinstance(env.session.sent(SUPER)[0].reply_markup, ReplyKeyboardRemove)
+    assert env.session.sent(SUPER)[1].reply_markup.inline_keyboard  # кнопка панели отдельным сообщением

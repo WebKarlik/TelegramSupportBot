@@ -1,25 +1,30 @@
 from aiogram import F, Router
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 
 from ..services import SupportService
 
 router = Router(name="user")
 router.message.filter(F.chat.type == "private")
 
+# Кнопки клавиатуры от прежней версии бота: их нажатие — не обращение, а просьба начать.
+LEGACY_BUTTONS = r"^(✏️\s*)?Написать запрос$|^(✉️\s*)?Мои запросы$"
+
 
 @router.message(CommandStart())
+@router.message(F.text.regexp(LEGACY_BUTTONS))
 async def start(message: Message, service: SupportService):
     await message.answer(
         f"👋 Поддержка {service.config.support_name}\n\n"
         "Опишите вашу проблему — можно приложить скриншот или файл.\n"
-        "Все обращения обрабатываются в порядке очереди, ответ придёт сюда."
+        "Все обращения обрабатываются в порядке очереди, ответ придёт сюда.",
+        reply_markup=ReplyKeyboardRemove(),
     )
 
 
 @router.message(F.text.startswith("/"))
 async def unknown_command(message: Message):
-    await message.answer("Просто опишите вашу проблему обычным сообщением 🙂")
+    await message.answer("Просто опишите вашу проблему обычным сообщением 🙂", reply_markup=ReplyKeyboardRemove())
 
 
 @router.message()
@@ -38,5 +43,6 @@ async def user_message(message: Message, service: SupportService):
     if existing is None:
         await message.answer(
             f"✅ Ваше обращение #{ticket['id']} отправлено в поддержку.\n"
-            "Если хотите что-то добавить — просто напишите ещё."
+            "Если хотите что-то добавить — просто напишите ещё.",
+            reply_markup=ReplyKeyboardRemove(),
         )
