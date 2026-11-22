@@ -4,6 +4,10 @@ import * as S from '../lib/support.js';
 
 const { store } = S;
 const REQUEST_ADMIN_ID = 1;
+// Убирает «залипшую» клавиатуру под полем ввода (например, от прежней версии бота).
+const NO_KEYBOARD = { reply_markup: { remove_keyboard: true } };
+// Кнопки старой клавиатуры: их нажатие — не обращение, а просьба начать.
+const LEGACY_BUTTONS = /^(✏️\s*)?Написать запрос$|^(✉️\s*)?Мои запросы$/;
 
 const send = (chatId, text, extra = {}) => S.safe(api.sendMessage({ chat_id: chatId, text, ...extra }));
 
@@ -25,14 +29,14 @@ export default async function (message) {
 
 async function handleUser(message, uid) {
   const command = parseCommand(message);
+  if ((command && command.cmd === 'start') || LEGACY_BUTTONS.test((message.text || '').trim())) {
+    await send(uid, `👋 Поддержка ${S.SUPPORT_NAME}\n\n`
+      + 'Опишите вашу проблему — можно приложить скриншот или файл.\n'
+      + 'Все обращения обрабатываются в порядке очереди, ответ придёт сюда.', NO_KEYBOARD);
+    return;
+  }
   if (command) {
-    if (command.cmd === 'start') {
-      await send(uid, `👋 Поддержка ${S.SUPPORT_NAME}\n\n`
-        + 'Опишите вашу проблему — можно приложить скриншот или файл.\n'
-        + 'Все обращения обрабатываются в порядке очереди, ответ придёт сюда.');
-    } else {
-      await send(uid, 'Просто опишите вашу проблему обычным сообщением 🙂');
-    }
+    await send(uid, 'Просто опишите вашу проблему обычным сообщением 🙂', NO_KEYBOARD);
     return;
   }
 
@@ -49,7 +53,7 @@ async function handleUser(message, uid) {
   }
   if (result.isNew) {
     await send(uid, `✅ Ваше обращение #${result.ticket.id} отправлено в поддержку.\n`
-      + 'Если хотите что-то добавить — просто напишите ещё.');
+      + 'Если хотите что-то добавить — просто напишите ещё.', NO_KEYBOARD);
   }
 }
 
@@ -77,7 +81,9 @@ async function handleAdmin(message, uid) {
           text += '\n👑 Суперадмин:\n/admins — список админов\n/addadmin — добавить админа\n/deladmin ID — удалить админа\n';
         }
         await S.setupAdminUi(uid);
-        return send(uid, text, { reply_markup: S.panelKeyboard() });
+        await send(uid, text, NO_KEYBOARD);
+        if (S.WEBAPP_URL) await send(uid, '🗂 Панель поддержки:', { reply_markup: S.panelKeyboard() });
+        return;
       }
       case 'panel':
         return S.WEBAPP_URL
@@ -103,6 +109,10 @@ async function handleAdmin(message, uid) {
       }
     }
     return send(uid, 'Неизвестная команда. Справка: /help');
+  }
+
+  if (LEGACY_BUTTONS.test((message.text || '').trim())) {
+    return handleAdmin({ ...message, text: '/start' }, uid);
   }
 
   // Суперадмин выбрал пользователя кнопкой «Выбрать пользователя».
